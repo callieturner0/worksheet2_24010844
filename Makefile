@@ -16,8 +16,11 @@ source/kernel.o: source/kernel.c
 source/functions.o: source/functions.c
 	$(CC) $(CFLAGS) -c source/functions.c -o source/functions.o
 
-kernel.elf: source/loader.o source/kernel.o source/functions.o source/link.ld
-	$(LD) -T ./source/link.ld -melf_i386 source/loader.o source/kernel.o source/functions.o -o kernel.elf
+drivers/framebuffer.o: drivers/framebuffer.c drivers/framebuffer.h
+	$(CC) $(CFLAGS) -c drivers/framebuffer.c -o drivers/framebuffer.o
+
+kernel.elf: source/loader.o source/kernel.o source/functions.o drivers/framebuffer.o source/link.ld
+	$(LD) -T ./source/link.ld -melf_i386 source/loader.o source/kernel.o source/functions.o drivers/framebuffer.o -o kernel.elf
 
 iso/boot/grub/stage2_eltorito:
 	mkdir -p iso/boot/grub
@@ -40,9 +43,9 @@ os.iso: kernel.elf iso/boot/kernel.elf iso/boot/grub/stage2_eltorito iso/boot/gr
 	iso
 
 run: os.iso
-	$(QEMU) -nographic -boot d -cdrom os.iso -m 32
+	$(QEMU) -display curses -monitor telnet::45454,server,nowait -serial mon:stdio -boot d -cdrom os.iso -m 32
 
 clean:
-	rm -f source/*.o kernel.elf iso/boot/kernel.elf os.iso logQ.txt
+	rm -f source/*.o drivers/*.o kernel.elf iso/boot/kernel.elf os.iso logQ.txt
 
 .PHONY: all run clean
