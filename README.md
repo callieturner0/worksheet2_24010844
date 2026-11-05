@@ -81,3 +81,67 @@ This makes the development process easier and allows the operating system to be 
 ### Conclusion
 
 Task 1 allowed me to gain practical experience with assembly language, linking, bootloaders and virtualisation. I successfully created a basic kernel, configured GRUB and generated a bootable ISO image. Testing the operating system in QEMU and checking the EAX register confirmed that the kernel was successfully executing.
+
+## Task 2 – Calling C Functions from the Kernel
+
+### Introduction
+
+For Task 2, I extended my operating system kernel so that it could run C functions. I used the assembly loader from Task 1 and added two new C files called `kernel.c` and `functions.c`.
+
+### C Functions
+
+In `functions.c`, I created three functions:
+
+* `sum_of_three()` – adds three numbers together.
+* `multiply_two()` – multiplies two numbers.
+* `find_largest()` – finds the largest of three numbers.
+
+These functions allowed me to practise writing and using C functions within my operating system.
+
+### Kernel Main Function
+
+I created `kernel.c` to call the three functions from `functions.c`.
+
+The results are stored in three variables:
+
+* `result1` stores the answer from `sum_of_three(10, 20, 30)`.
+* `result2` stores the answer from `multiply_two(5, 6)`.
+* `result3` stores the answer from `find_largest(15, 40, 25)`.
+
+The kernel then uses an infinite loop to keep running.
+
+### Updating the Assembly Loader
+
+I updated `loader.asm` so that it could transfer control to the C code.
+
+I added `extern kernel_main` to reference the C function. I also set up a stack using `stack_bottom` and `stack_top`, before using `call kernel_main` to execute the C kernel.
+
+### Makefile Changes
+
+I updated my Makefile to support compiling C files as well as assembly files.
+
+I added GCC as the C compiler and created rules to compile `kernel.c` and `functions.c` into object files. These were then linked together with `loader.o` to create the final `kernel.elf` file.
+
+### Testing
+
+I used `make` to build the kernel and successfully created the bootable ISO file.
+
+I then used `make run` to test the operating system in QEMU. GRUB successfully loaded the kernel.
+
+I also used the `nm` command to check that `kernel_main`, `sum_of_three`, `multiply_two` and `find_largest` were included in the compiled kernel.
+
+To test the return values of my three C functions, I created a separate test program and compiled it with `functions.c`.
+
+The results were:
+
+| Function     | Input      | Expected result | Actual result |
+| ------------ | ---------- | --------------: | ------------: |
+| sum_of_three | 10, 20, 30 |              60 |            60 |
+| multiply_two | 5, 6       |              30 |            30 |
+| find_largest | 15, 40, 25 |              40 |            40 |
+
+All three functions returned the correct results.
+
+### Conclusion
+
+Task 2 allowed me to extend my operating system so that it could call C functions from assembly. I also gained experience compiling and linking C and assembly files together, updating the Makefile and testing my functions.
