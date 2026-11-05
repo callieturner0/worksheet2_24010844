@@ -1,147 +1,217 @@
-# Worksheet 2 – Operating Systems
+# Operating Systems – Worksheet 2 Part 1
 
-## Task 1 – Creating a Tiny Operating System
+## Introduction
 
-### Introduction
+This project involves developing a small operating system using Assembly and C. The aim was to understand how a computer starts an operating system, how Assembly can call C functions, and how a framebuffer can be used to display text.
 
-The aim of Task 1 was to create a basic operating system kernel using assembly language, configure a bootloader and produce a bootable ISO image. I used NASM to assemble the kernel, GNU LD to link it and GRUB to load the operating system. I also used QEMU to test the operating system in a virtual environment.
+The project was developed using the UWE CSCT Cloud environment, with NASM, GCC, Make and QEMU.
 
-### 1. Assembly Loader
+---
 
-I created `loader.asm` inside the source folder. This file contains the initial assembly code for the kernel.
+## Task 1 – Starting a Tiny Operating System
 
-The code includes a Multiboot header containing a magic number, flags and checksum. These values allow GRUB to recognise the kernel as a Multiboot-compatible executable.
+For Task 1, I created the basic structure needed for the operating system. This included the `source`, `drivers` and `iso` directories, along with a Makefile and linker script.
 
-The loader then sets the EAX register to `0xCAFEBABE` and enters an infinite loop. This provides a simple way to check that the kernel has successfully loaded and started executing.
+I created an Assembly boot loader which allows the operating system to start. The initial kernel was designed to place the value `0xCAFEBABE` into the EAX register.
 
-### 2. Linker Script
+The boot loader also sets up a stack before calling the kernel.
 
-I created `link.ld` to define how the kernel is organised when it is linked.
+Example:
 
-The linker script specifies the sections of the kernel, including `.text`, `.rodata`, `.data` and `.bss`. This ensures that the assembled code is organised into an executable ELF file.
-
-### 3. GRUB Configuration
-
-I created a `menu.lst` file inside `iso/boot/grub/`.
-
-This file configures the GRUB boot menu and tells it where to find the kernel. The configuration includes the operating system entry and the location of `kernel.elf`.
-
-I also copied the GRUB bootloader file `stage2_eltorito` into the ISO directory.
-
-### 4. Creating the Bootable ISO
-
-I used NASM to assemble the loader:
-
-```bash
-nasm -f elf source/loader.asm -o source/loader.o
+```asm
+mov esp, stack_top
+cld
+call kernel_main
 ```
 
-I then used the linker to generate the kernel ELF file:
+The stack is required so that the C kernel can run correctly.
 
-```bash
-ld -T ./source/link.ld -melf_i386 source/loader.o -o kernel.elf
+I also created a linker script to organise the kernel in memory and used GRUB to boot the operating system through a bootable ISO file.
+
+**Screenshot – Project structure and files**
+
+[Insert screenshot here]
+
+**Screenshot – QEMU successfully booting the operating system**
+
+[Insert screenshot here]
+
+---
+
+## Task 2 – Calling C from Assembly
+
+For Task 2, I extended the operating system so that it could run C code instead of only Assembly.
+
+I updated the Makefile to compile the C source files using GCC and link them with the Assembly loader.
+
+I created `functions.c`, which contains three functions:
+
+* `sum_of_three()` adds three numbers together.
+* `multiply_two()` multiplies two numbers.
+* `find_largest()` finds the largest of three numbers.
+
+For example, the largest number function compares the values and updates the largest variable when it finds a bigger number.
+
+```c
+int find_largest(int a, int b, int c)
+{
+    int largest = a;
+
+    if (b > largest)
+        largest = b;
+
+    if (c > largest)
+        largest = c;
+
+    return largest;
+}
 ```
 
-After copying the required GRUB and kernel files into the ISO directory, I used `genisoimage` to generate the bootable ISO image:
+I tested the functions using the kernel and also checked that the functions had been compiled and linked into the kernel.
 
-```bash
-genisoimage -R -b boot/grub/stage2_eltorito -no-emul-boot -boot-load-size 4 -A os -input-charset utf8 -quiet -boot-info-table -o os.iso iso
+The test results were:
+
+| Function | Test         | Result |
+| -------- | ------------ | -----: |
+| Sum      | 10 + 20 + 30 |     60 |
+| Multiply | 5 × 6        |     30 |
+| Largest  | 15, 40, 25   |     40 |
+
+**Screenshot – C functions**
+
+[Insert screenshot here]
+
+**Screenshot – Function test results**
+
+[Insert screenshot here]
+
+---
+
+## Task 3 – Framebuffer Driver
+
+For Task 3, I developed a framebuffer driver to allow the operating system to display text.
+
+A framebuffer uses memory-mapped I/O. This means that writing data to a particular memory address updates the display.
+
+The framebuffer memory address used in this project is:
+
+```c
+0x000B8000
 ```
 
-### 5. Testing Using QEMU
+The screen uses an 80 × 25 text layout. Each screen position stores a character and its colour information.
 
-I used QEMU to test the operating system:
+### Framebuffer API
 
-```bash
-qemu-system-i386 -nographic -boot d -cdrom os.iso -m 32 -d cpu -D logQ.txt
+I created `framebuffer.c` and `framebuffer.h` inside the `drivers` directory.
+
+The header file contains the function declarations, allowing the kernel to use the framebuffer functions.
+
+The driver includes the following functions:
+
+| Function               | Purpose                                 |
+| ---------------------- | --------------------------------------- |
+| `fb_init()`            | Initialises the framebuffer             |
+| `fb_move(x, y)`        | Moves the cursor to a screen position   |
+| `fb_putchar(c)`        | Displays one character                  |
+| `fb_write(text)`       | Displays a string                       |
+| `fb_write_dec(number)` | Displays a decimal number               |
+| `fb_set_color(fg, bg)` | Changes the text and background colours |
+| `fb_clear()`           | Clears the screen                       |
+
+### Writing to framebuffer memory
+
+The framebuffer is accessed using a pointer to the memory address:
+
+```c
+volatile unsigned short *fb =
+    (unsigned short *)0x000B8000;
 ```
 
-The GRUB boot menu appeared and successfully loaded the kernel.
+The `volatile` keyword is used because the memory is connected to hardware and its contents can change outside normal program operations.
 
-I checked the CPU execution log using:
+To display a character, the driver combines the character with its colour attribute:
 
-```bash
-grep -i "CAFEBABE" logQ.txt
+```c
+fb[position] = ((unsigned short)colour << 8) | c;
 ```
 
-The output showed that the EAX register contained `CAFEBABE`, confirming that the kernel had reached the assembly loader code and was executing successfully.
+This allows the driver to control both the character displayed and its colour.
 
-### 6. Makefile
+### Cursor positioning
 
-I created a Makefile to automate the build process. This means I do not need to manually enter each assembly, linking and ISO creation command.
+I added a function to move the cursor using an x and y position.
 
-The Makefile includes the following targets:
+```c
+void fb_move(unsigned short x, unsigned short y)
+{
+    if (x < FB_WIDTH && y < FB_HEIGHT)
+    {
+        cursor_x = x;
+        cursor_y = y;
+    }
+}
+```
 
-* `make` – Builds the operating system ISO.
-* `make run` – Launches the ISO using QEMU.
-* `make clean` – Removes generated build files and logs.
+This checks that the requested position is inside the screen boundaries before updating the cursor coordinates.
 
-This makes the development process easier and allows the operating system to be rebuilt whenever changes are made.
+### Testing the driver
 
-### Conclusion
+I updated `kernel.c` to test the framebuffer functions.
 
-Task 1 allowed me to gain practical experience with assembly language, linking, bootloaders and virtualisation. I successfully created a basic kernel, configured GRUB and generated a bootable ISO image. Testing the operating system in QEMU and checking the EAX register confirmed that the kernel was successfully executing.
+The kernel displays strings, numbers and different text colours. I also tested moving the cursor to position `(10, 10)`.
 
-## Task 2 – Calling C Functions from the Kernel
+I added a screen-clearing test using:
 
-### Introduction
+```c
+fb_clear();
+fb_write("Screen cleared successfully!");
+```
 
-For Task 2, I extended my operating system kernel so that it could run C functions. I used the assembly loader from Task 1 and added two new C files called `kernel.c` and `functions.c`.
+This clears the previous contents and displays a new message from the beginning of the screen.
 
-### C Functions
+I updated the Makefile to compile `drivers/framebuffer.c` and link the resulting object file into the kernel.
 
-In `functions.c`, I created three functions:
+### Running with QEMU
 
-* `sum_of_three()` – adds three numbers together.
-* `multiply_two()` – multiplies two numbers.
-* `find_largest()` – finds the largest of three numbers.
+I changed the QEMU run command to use Curses mode, as required by the worksheet.
 
-These functions allowed me to practise writing and using C functions within my operating system.
+I also enabled a Telnet monitor on port `45454`. This allows QEMU to be controlled from another terminal.
 
-### Kernel Main Function
+To connect to the monitor:
 
-I created `kernel.c` to call the three functions from `functions.c`.
+```bash
+telnet localhost 45454
+```
 
-The results are stored in three variables:
+The `quit` command can then be used to close QEMU.
 
-* `result1` stores the answer from `sum_of_three(10, 20, 30)`.
-* `result2` stores the answer from `multiply_two(5, 6)`.
-* `result3` stores the answer from `find_largest(15, 40, 25)`.
+**Screenshot – Framebuffer header file**
 
-The kernel then uses an infinite loop to keep running.
+[Insert screenshot here]
 
-### Updating the Assembly Loader
+**Screenshot – Framebuffer driver implementation**
 
-I updated `loader.asm` so that it could transfer control to the C code.
+[Insert screenshot here]
 
-I added `extern kernel_main` to reference the C function. I also set up a stack using `stack_bottom` and `stack_top`, before using `call kernel_main` to execute the C kernel.
+**Screenshot – Kernel testing the framebuffer functions**
 
-### Makefile Changes
+[Insert screenshot here]
 
-I updated my Makefile to support compiling C files as well as assembly files.
+**Screenshot – QEMU showing the test results**
 
-I added GCC as the C compiler and created rules to compile `kernel.c` and `functions.c` into object files. These were then linked together with `loader.o` to create the final `kernel.elf` file.
+[Insert screenshot here]
 
-### Testing
+**Screenshot – Telnet framebuffer memory check**
 
-I used `make` to build the kernel and successfully created the bootable ISO file.
+[Insert screenshot here]
 
-I then used `make run` to test the operating system in QEMU. GRUB successfully loaded the kernel.
+---
 
-I also used the `nm` command to check that `kernel_main`, `sum_of_three`, `multiply_two` and `find_largest` were included in the compiled kernel.
+## Task 4 – Documentation
 
-To test the return values of my three C functions, I created a separate test program and compiled it with `functions.c`.
+This README documents the development of the operating system across Tasks 1, 2 and 3.
 
-The results were:
+It includes explanations of the main implementation decisions, selected code examples and screenshots showing the operating system and its functions working.
 
-| Function     | Input      | Expected result | Actual result |
-| ------------ | ---------- | --------------: | ------------: |
-| sum_of_three | 10, 20, 30 |              60 |            60 |
-| multiply_two | 5, 6       |              30 |            30 |
-| find_largest | 15, 40, 25 |              40 |            40 |
-
-All three functions returned the correct results.
-
-### Conclusion
-
-Task 2 allowed me to extend my operating system so that it could call C functions from assembly. I also gained experience compiling and linking C and assembly files together, updating the Makefile and testing my functions.
+The complete source code is included in the repository.
