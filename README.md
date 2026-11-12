@@ -187,4 +187,84 @@ I also created `fb_set_color()` so that I could change the foreground and backgr
 
 I created `fb_putchar()` to print individual characters to the screen.
 
-I then used this function inside `fb_write()` so that I could print whole strings rather than
+I then used this function inside `fb_write()` so that I could print whole strings rather than having to print each character separately.
+
+**SS8 – Printing characters and strings**
+
+![Framebuffer implementation part 2](screenshots/ss8.png)
+
+I also added `fb_write_dec()` to allow numbers to be displayed. This works by taking each digit from the number and converting it into a character before printing it.
+
+**SS9 – Number printing and clearing the framebuffer**
+
+![Number printing and clearing](screenshots/ss9.png)
+
+## Clearing and Initialising the Screen
+
+I created `fb_clear()` to clear the screen by writing blank spaces to all 2,000 positions in the framebuffer. It also resets the cursor back to the top-left corner.
+
+The `fb_init()` function sets the default text colour and calls `fb_clear()` when the framebuffer is first started.
+
+**SS10 – The clear and initialise functions**
+
+![Framebuffer clear and initialisation](screenshots/ss10.png)
+
+## Testing the Framebuffer
+
+Once I had finished the driver, I updated `kernel.c` to test the different functions.
+
+I used the kernel to display a heading, messages, numbers and text in different colours. I also tested moving the cursor to position `(10, 10)`.
+
+I called my three C functions from Task 2 again to make sure they still worked with the framebuffer driver.
+
+**SS11 – Initialising the framebuffer and testing text, colours and cursor positioning**
+
+![Kernel testing part 1](screenshots/ss11.png)
+
+**SS12 – Calling the C functions and displaying their results**
+
+![Kernel testing part 2](screenshots/ss12.png)
+
+## Running the Operating System in QEMU
+
+I updated my Makefile to include the framebuffer driver when compiling and linking the kernel.
+
+I also changed the QEMU command to use Curses mode, as requested in the worksheet. This allowed the operating system to display text in the terminal.
+
+I configured a Telnet monitor on port `45454`, which allowed me to connect to QEMU through another terminal. I could then use the `quit` command to close the emulator.
+
+When testing the framebuffer, I got the following results:
+
+- Sum result: 60
+- Multiply result: 30
+- Largest result: 40
+
+**SS13 – QEMU displaying the framebuffer test results**
+
+![QEMU output](screenshots/ss13.png)
+
+I also tested the clear-screen function by calling `fb_clear()` and then printing a new message. This successfully removed the previous text and displayed the new message.
+
+**SS14 – Testing the clear-screen function**
+
+![Clear screen test](screenshots/ss14.png)
+
+---
+
+# Task 4 – README and GitHub
+
+For the final task, I documented the work I had completed in this README. I included explanations of how the main parts of the operating system work, some short code examples and screenshots of my progress.
+
+I used Git to keep track of my changes and pushed my completed work to my GitHub repository on the `main` branch.
+
+**SS15 – My GitHub repository showing the project files and commits**
+
+![GitHub repository](screenshots/ss15.png)
+
+---
+
+## Conclusion
+
+Overall, this worksheet helped me understand more about how an operating system works at a basic level. I was able to create a bootloader, get my kernel working with C functions and build a framebuffer driver to display text.
+
+I also got more experience using Assembly, C, Linux, Make and QEMU. Testing each part as I went along helped me check that the different parts of my operating system were working together.
