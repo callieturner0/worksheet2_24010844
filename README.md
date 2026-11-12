@@ -2,21 +2,32 @@
 
 ## Introduction
 
-This project involves developing a small operating system using Assembly and C. The aim was to understand how a computer starts an operating system, how Assembly can call C functions, and how a framebuffer can be used to display text.
+For this worksheet, I worked on building a small operating system using Assembly and C. The main aim was to understand how an operating system starts up, how Assembly and C work together, and how text can be displayed using a framebuffer.
 
-The project was developed using the UWE CSCT Cloud environment, with NASM, GCC, Make and QEMU.
+I completed the work using the UWE CSCT Cloud environment. The main tools I used were NASM, GCC, Make and QEMU.
+
+### Project Structure
+
+I organised my project into a few different folders to keep the files separate and easier to manage.
+
+- `source` contains the Assembly loader, kernel, C functions and linker script.
+- `drivers` contains my framebuffer driver.
+- `iso` contains the GRUB files needed to boot the operating system.
+- `Makefile` contains the commands used to compile and build the operating system.
+
+**SS1 – Project structure**
+
+![Project structure](screenshots/ss1.png)
 
 ---
 
-## Task 1 – Starting a Tiny Operating System
+# Task 1 – Starting a Tiny Operating System
 
-For Task 1, I created the basic structure needed for the operating system. This included the `source`, `drivers` and `iso` directories, along with a Makefile and linker script.
+For Task 1, I started by creating the basic files needed to boot my operating system. This included the Assembly bootloader, linker script, GRUB configuration and Makefile.
 
-I created an Assembly boot loader which allows the operating system to start. The initial kernel was designed to place the value `0xCAFEBABE` into the EAX register.
+The bootloader is responsible for starting the operating system. I added a Multiboot header containing a magic number, flags and checksum so that GRUB could recognise the kernel.
 
-The boot loader also sets up a stack before calling the kernel.
-
-Example:
+I also needed to set up a stack before calling the C kernel. The following code shows how I did this:
 
 ```asm
 mov esp, stack_top
@@ -24,33 +35,35 @@ cld
 call kernel_main
 ```
 
-The stack is required so that the C kernel can run correctly.
+Setting up the stack allows the C code to run correctly. I also created a linker script to organise where the kernel is placed in memory.
 
-I also created a linker script to organise the kernel in memory and used GRUB to boot the operating system through a bootable ISO file.
+I then updated the Makefile so that it could compile the files, link the kernel and create a bootable ISO image.
 
-**Screenshot – Project structure and files**
+### Evidence
 
-[Insert screenshot here]
+**SS2 – My Assembly bootloader**
 
-**Screenshot – QEMU successfully booting the operating system**
+![Assembly bootloader](screenshots/ss2.png)
 
-[Insert screenshot here]
+**SS3 – Building the kernel and ISO**
+
+![Successful build](screenshots/ss3.png)
 
 ---
 
-## Task 2 – Calling C from Assembly
+# Task 2 – Calling C from Assembly
 
-For Task 2, I extended the operating system so that it could run C code instead of only Assembly.
+For Task 2, I extended my operating system so that it could run C functions as well as Assembly code.
 
-I updated the Makefile to compile the C source files using GCC and link them with the Assembly loader.
+I updated the Makefile to use GCC to compile the C files and link them with my Assembly loader.
 
-I created `functions.c`, which contains three functions:
+I created a file called `functions.c` which contains three functions:
 
-* `sum_of_three()` adds three numbers together.
-* `multiply_two()` multiplies two numbers.
-* `find_largest()` finds the largest of three numbers.
+- `sum_of_three()` adds three numbers together.
+- `multiply_two()` multiplies two numbers.
+- `find_largest()` finds the largest number out of three values.
 
-For example, the largest number function compares the values and updates the largest variable when it finds a bigger number.
+For example, my `find_largest()` function starts by assuming that the first number is the largest. It then compares the other two numbers and updates the value if it finds a bigger one.
 
 ```c
 int find_largest(int a, int b, int c)
@@ -67,80 +80,89 @@ int find_largest(int a, int b, int c)
 }
 ```
 
-I tested the functions using the kernel and also checked that the functions had been compiled and linked into the kernel.
+I tested all three functions to make sure they were returning the correct answers.
 
-The test results were:
+The results were:
 
-| Function | Test         | Result |
-| -------- | ------------ | -----: |
-| Sum      | 10 + 20 + 30 |     60 |
-| Multiply | 5 × 6        |     30 |
-| Largest  | 15, 40, 25   |     40 |
+| Function | Numbers used | Result |
+|---|---|---:|
+| Sum | 10, 20, 30 | 60 |
+| Multiply | 5, 6 | 30 |
+| Largest | 15, 40, 25 | 40 |
 
-**Screenshot – C functions**
+All three functions returned the expected results.
 
-[Insert screenshot here]
+### Evidence
 
-**Screenshot – Function test results**
+**SS4 – The three C functions in `functions.c`**
 
-[Insert screenshot here]
+![C functions](screenshots/ss4.png)
+
+**SS5 – Testing the C functions**
+
+![Function results](screenshots/ss5.png)
 
 ---
 
-## Task 3 – Framebuffer Driver
+# Task 3 – Framebuffer Driver
 
-For Task 3, I developed a framebuffer driver to allow the operating system to display text.
+For Task 3, I moved on to adding input and output functionality to my operating system. I focused on the framebuffer, which allows text to be displayed on the screen.
 
-A framebuffer uses memory-mapped I/O. This means that writing data to a particular memory address updates the display.
+A framebuffer uses memory-mapped I/O. This means that data can be written to a specific memory address to update what is displayed.
 
-The framebuffer memory address used in this project is:
+The framebuffer address I used was:
 
 ```c
 0x000B8000
 ```
 
-The screen uses an 80 × 25 text layout. Each screen position stores a character and its colour information.
+The screen is set up as 80 columns by 25 rows. Each position stores a character and information about its colour.
 
-### Framebuffer API
+## Creating the Framebuffer API
 
-I created `framebuffer.c` and `framebuffer.h` inside the `drivers` directory.
+I created two files inside my `drivers` folder:
 
-The header file contains the function declarations, allowing the kernel to use the framebuffer functions.
+- `framebuffer.c` contains the actual functions.
+- `framebuffer.h` contains the function declarations so that the kernel can use them.
 
-The driver includes the following functions:
+I included several functions to allow the kernel to control what appears on the screen.
 
-| Function               | Purpose                                 |
-| ---------------------- | --------------------------------------- |
-| `fb_init()`            | Initialises the framebuffer             |
-| `fb_move(x, y)`        | Moves the cursor to a screen position   |
-| `fb_putchar(c)`        | Displays one character                  |
-| `fb_write(text)`       | Displays a string                       |
-| `fb_write_dec(number)` | Displays a decimal number               |
+| Function | What it does |
+|---|---|
+| `fb_init()` | Sets up the framebuffer |
+| `fb_move(x, y)` | Moves the cursor to a chosen position |
+| `fb_putchar(c)` | Prints one character |
+| `fb_write(text)` | Prints a string |
+| `fb_write_dec(number)` | Prints a decimal number |
 | `fb_set_color(fg, bg)` | Changes the text and background colours |
-| `fb_clear()`           | Clears the screen                       |
+| `fb_clear()` | Clears the screen |
 
-### Writing to framebuffer memory
+**SS6 – Framebuffer header file**
 
-The framebuffer is accessed using a pointer to the memory address:
+![Framebuffer header](screenshots/ss6.png)
+
+## How the Framebuffer Works
+
+To access the framebuffer, I created a pointer to its memory address:
 
 ```c
 volatile unsigned short *fb =
     (unsigned short *)0x000B8000;
 ```
 
-The `volatile` keyword is used because the memory is connected to hardware and its contents can change outside normal program operations.
+I used `volatile` because the framebuffer is connected to hardware, so I don't want the compiler to assume that its contents will never change.
 
-To display a character, the driver combines the character with its colour attribute:
+When printing a character, I needed to combine the character with its colour information before writing it to the correct position in memory.
 
 ```c
 fb[position] = ((unsigned short)colour << 8) | c;
 ```
 
-This allows the driver to control both the character displayed and its colour.
+This allows both the character and its colour to be displayed.
 
-### Cursor positioning
+## Moving the Cursor and Changing Colours
 
-I added a function to move the cursor using an x and y position.
+I created `fb_move()` to allow the cursor to be moved using x and y coordinates.
 
 ```c
 void fb_move(unsigned short x, unsigned short y)
@@ -153,65 +175,16 @@ void fb_move(unsigned short x, unsigned short y)
 }
 ```
 
-This checks that the requested position is inside the screen boundaries before updating the cursor coordinates.
+I added a check to make sure the cursor stays within the screen boundaries.
 
-### Testing the driver
+I also created `fb_set_color()` so that I could change the foreground and background colours of the text.
 
-I updated `kernel.c` to test the framebuffer functions.
+**SS7 – Framebuffer memory, cursor variables and colour settings**
 
-The kernel displays strings, numbers and different text colours. I also tested moving the cursor to position `(10, 10)`.
+![Framebuffer implementation part 1](screenshots/ss7.png)
 
-I added a screen-clearing test using:
+## Printing Characters, Strings and Numbers
 
-```c
-fb_clear();
-fb_write("Screen cleared successfully!");
-```
+I created `fb_putchar()` to print individual characters to the screen.
 
-This clears the previous contents and displays a new message from the beginning of the screen.
-
-I updated the Makefile to compile `drivers/framebuffer.c` and link the resulting object file into the kernel.
-
-### Running with QEMU
-
-I changed the QEMU run command to use Curses mode, as required by the worksheet.
-
-I also enabled a Telnet monitor on port `45454`. This allows QEMU to be controlled from another terminal.
-
-To connect to the monitor:
-
-```bash
-telnet localhost 45454
-```
-
-The `quit` command can then be used to close QEMU.
-
-**Screenshot – Framebuffer header file**
-
-[Insert screenshot here]
-
-**Screenshot – Framebuffer driver implementation**
-
-[Insert screenshot here]
-
-**Screenshot – Kernel testing the framebuffer functions**
-
-[Insert screenshot here]
-
-**Screenshot – QEMU showing the test results**
-
-[Insert screenshot here]
-
-**Screenshot – Telnet framebuffer memory check**
-
-[Insert screenshot here]
-
----
-
-## Task 4 – Documentation
-
-This README documents the development of the operating system across Tasks 1, 2 and 3.
-
-It includes explanations of the main implementation decisions, selected code examples and screenshots showing the operating system and its functions working.
-
-The complete source code is included in the repository.
+I then used this function inside `fb_write()` so that I could print whole strings rather than
