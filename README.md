@@ -6,6 +6,17 @@ For this worksheet, I worked on building a small operating system using Assembly
 
 I completed the work using the UWE CSCT Cloud environment. The main tools I used were NASM, GCC, Make and QEMU.
 
+## Accessing and Building Each Part
+
+I have used separate Git branches to organise Part 1 and Part 2 of this worksheet.
+
+- `main` contains Part 1, including the original Makefile and framebuffer implementation.
+- `worksheet2-part2` contains Part 2, including the updated Makefile, keyboard input, interrupt handling, input buffer and terminal implementation.
+
+Each branch has its own Makefile because Part 2 requires additional source files and drivers.
+
+To build and test each part, switch to the relevant branch first and run `make` to build the operating system, followed by `make run` to launch it in QEMU.
+
 ### Project Structure
 
 I organised my project into a few different folders to keep the files separate and easier to manage.
