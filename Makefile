@@ -43,7 +43,7 @@ os.iso: kernel.elf iso/boot/kernel.elf iso/boot/grub/stage2_eltorito iso/boot/gr
 	iso
 
 run: os.iso
-	$(QEMU) -display curses -monitor telnet::45454,server,nowait -serial mon:stdio -boot d -cdrom os.iso -m 32
+	$(QEMU) -display curses -monitor telnet::45454,server,nowait -boot d -cdrom os.iso -m 32
 
 clean:
 	rm -f source/*.o drivers/*.o kernel.elf iso/boot/kernel.elf os.iso logQ.txt
