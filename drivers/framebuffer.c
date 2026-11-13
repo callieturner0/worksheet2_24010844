@@ -56,6 +56,45 @@ void fb_putchar(char c)
     }
 }
 
+// Print a character from keyboard input
+void fb_write_char(char c)
+{
+    fb_putchar(c);
+}
+
+// Move the cursor to a new line
+void fb_newline(void)
+{
+    cursor_x = 0;
+    cursor_y++;
+
+    if (cursor_y >= FB_HEIGHT)
+    {
+        cursor_y = 0;
+    }
+}
+
+// Remove the previous character
+void fb_backspace(void)
+{
+    if (cursor_x > 0)
+    {
+        cursor_x--;
+    }
+    else if (cursor_y > 0)
+    {
+        cursor_y--;
+        cursor_x = FB_WIDTH - 1;
+    }
+    else
+    {
+        return;
+    }
+
+    unsigned short position = cursor_y * FB_WIDTH + cursor_x;
+    fb[position] = ((unsigned short)colour << 8) | ' ';
+}
+
 // Print a string
 void fb_write(char *text)
 {

@@ -22,4 +22,9 @@ void fb_set_color(unsigned char foreground, unsigned char background);
 // Clear the screen
 void fb_clear(void);
 
+// Keyboard input functions
+void fb_write_char(char c);
+void fb_newline(void);
+void fb_backspace(void);
+
 #endif

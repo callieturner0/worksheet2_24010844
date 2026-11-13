@@ -1,19 +1,21 @@
-# Operating Systems – Worksheet 2 Part 1
+# Operating Systems – Worksheet 2
 
 ## Introduction
 
-For this worksheet, I worked on building a small operating system using Assembly and C. The main aim was to understand how an operating system starts up, how Assembly and C work together, and how text can be displayed using a framebuffer.
+For this worksheet, I worked on building a small operating system using Assembly and C. The main aim was to understand how an operating system starts up, how Assembly and C work together, how text can be displayed using a framebuffer and how keyboard input can be processed.
 
-I completed the work using the UWE CSCT Cloud environment. The main tools I used were NASM, GCC, Make and QEMU.
+I completed the work using the UWE CSCT Cloud environment. The main tools I used were NASM, GCC, Make, Git and QEMU.
 
-### Project Structure
+## Project Structure
 
 I organised my project into a few different folders to keep the files separate and easier to manage.
 
 - `source` contains the Assembly loader, kernel, C functions and linker script.
-- `drivers` contains my framebuffer driver.
+- `drivers` contains the framebuffer, keyboard, interrupt and I/O drivers.
 - `iso` contains the GRUB files needed to boot the operating system.
+- `screenshots` contains the screenshots showing my implementation and testing.
 - `Makefile` contains the commands used to compile and build the operating system.
+- `README.md` contains the documentation for the worksheet.
 
 **SS1 – Project structure**
 
@@ -21,7 +23,9 @@ I organised my project into a few different folders to keep the files separate a
 
 ---
 
-# Task 1 – Starting a Tiny Operating System
+# Part 1 – Building the Basic Operating System
+
+## Task 1 – Starting a Tiny Operating System
 
 For Task 1, I started by creating the basic files needed to boot my operating system. This included the Assembly bootloader, linker script, GRUB configuration and Makefile.
 
@@ -51,7 +55,7 @@ I then updated the Makefile so that it could compile the files, link the kernel 
 
 ---
 
-# Task 2 – Calling C from Assembly
+## Task 2 – Calling C from Assembly
 
 For Task 2, I extended my operating system so that it could run C functions as well as Assembly code.
 
@@ -104,7 +108,7 @@ All three functions returned the expected results.
 
 ---
 
-# Task 3 – Framebuffer Driver
+## Task 3 – Framebuffer Driver
 
 For Task 3, I moved on to adding input and output functionality to my operating system. I focused on the framebuffer, which allows text to be displayed on the screen.
 
@@ -118,7 +122,7 @@ The framebuffer address I used was:
 
 The screen is set up as 80 columns by 25 rows. Each position stores a character and information about its colour.
 
-## Creating the Framebuffer API
+### Creating the Framebuffer API
 
 I created two files inside my `drivers` folder:
 
@@ -141,7 +145,7 @@ I included several functions to allow the kernel to control what appears on the 
 
 ![Framebuffer header](screenshots/ss6.png)
 
-## How the Framebuffer Works
+### How the Framebuffer Works
 
 To access the framebuffer, I created a pointer to its memory address:
 
@@ -160,7 +164,7 @@ fb[position] = ((unsigned short)colour << 8) | c;
 
 This allows both the character and its colour to be displayed.
 
-## Moving the Cursor and Changing Colours
+### Moving the Cursor and Changing Colours
 
 I created `fb_move()` to allow the cursor to be moved using x and y coordinates.
 
@@ -183,7 +187,7 @@ I also created `fb_set_color()` so that I could change the foreground and backgr
 
 ![Framebuffer implementation part 1](screenshots/ss7.png)
 
-## Printing Characters, Strings and Numbers
+### Printing Characters, Strings and Numbers
 
 I created `fb_putchar()` to print individual characters to the screen.
 
@@ -199,7 +203,7 @@ I also added `fb_write_dec()` to allow numbers to be displayed. This works by ta
 
 ![Number printing and clearing](screenshots/ss9.png)
 
-## Clearing and Initialising the Screen
+### Clearing and Initialising the Screen
 
 I created `fb_clear()` to clear the screen by writing blank spaces to all 2,000 positions in the framebuffer. It also resets the cursor back to the top-left corner.
 
@@ -209,7 +213,7 @@ The `fb_init()` function sets the default text colour and calls `fb_clear()` whe
 
 ![Framebuffer clear and initialisation](screenshots/ss10.png)
 
-## Testing the Framebuffer
+### Testing the Framebuffer
 
 Once I had finished the driver, I updated `kernel.c` to test the different functions.
 
@@ -225,7 +229,7 @@ I called my three C functions from Task 2 again to make sure they still worked w
 
 ![Kernel testing part 2](screenshots/ss12.png)
 
-## Running the Operating System in QEMU
+### Running the Operating System in QEMU
 
 I updated my Makefile to include the framebuffer driver when compiling and linking the kernel.
 
@@ -251,7 +255,7 @@ I also tested the clear-screen function by calling `fb_clear()` and then printin
 
 ---
 
-# Task 4 – README and GitHub
+## Task 4 – README and GitHub
 
 For the final task, I documented the work I had completed in this README. I included explanations of how the main parts of the operating system work, some short code examples and screenshots of my progress.
 
@@ -263,8 +267,124 @@ I used Git to keep track of my changes and pushed my completed work to my GitHub
 
 ---
 
+# Part 2 – Inputs and Interrupts
+
+## Task 1 – Keyboard Input and Interrupt Handling
+
+For this part of the worksheet, I extended my operating system so that users could enter text using the keyboard. This involved setting up hardware interrupts, reading keyboard scan codes, converting them into ASCII characters and displaying the input using the framebuffer.
+
+I also needed to create an input buffer so that characters could be stored and retrieved by other parts of the operating system.
+
+### Keyboard Input
+
+I first tested that the keyboard interrupt handler was working correctly and that characters could be entered into the operating system.
+
+The keyboard scan codes are read and converted into ASCII characters so they can be displayed on the framebuffer.
+
+The terminal displays a `myos>` prompt and allows the user to enter text.
+
+**SS16 – Keyboard input and terminal output**
+
+![Keyboard input](screenshots/ss16.png)
+
+### Backspace Handling
+
+I added Backspace functionality so that users could correct their input before pressing Enter. When Backspace is pressed, the previous character is removed from the display and the input buffer is updated.
+
+I tested this by entering "hello world" and deleting the final two characters. The program correctly returned "hello wor".
+
+**SS17 – Backspace testing**
+
+![Backspace testing](screenshots/ss17.png)
+
+### Input Buffer and Buffer Size
+
+A circular input buffer was created in `drivers/interrupts.c` with a size of 256 characters. It uses a read index and a write index to keep track of where characters are retrieved and stored.
+
+The `buffer_add()` function adds new characters to the buffer and checks whether it is full before storing them. This helps prevent unread characters from being overwritten.
+
+I also tested longer inputs to check that the operating system could handle them without crashing. The `readline()` function uses the size provided to prevent writing beyond the allocated character array.
+
+**SS18 – Long input and buffer size testing**
+
+![Long input testing](screenshots/ss18.png)
+
+**SS19 – Circular input buffer implementation**
+
+![Circular input buffer](screenshots/ss19.png)
+
+### getc() Function
+
+I implemented the `getc()` function to retrieve one character at a time from the input buffer.
+
+It checks whether the buffer is empty and returns `-1` if there are no characters available. Otherwise, it retrieves the next character and moves the read index forward.
+
+The read index uses circular indexing so that it returns to the beginning of the buffer when it reaches the end.
+
+**SS20 – getc() implementation**
+
+![getc implementation](screenshots/ss20.png)
+
+### readline() Function
+
+The `readline()` function uses `getc()` to read characters from the input buffer until the Enter key is pressed. It stores the characters in a supplied character array and returns the length of the completed input.
+
+I also included Backspace handling and a size check to prevent the function from writing beyond the available space. A null terminator is added at the end of the string.
+
+**SS21 – readline() implementation**
+
+![readline implementation](screenshots/ss21.png)
+
+### Keyboard Interrupt Handler
+
+The keyboard interrupt handler processes the scan codes received from the keyboard and converts them into ASCII characters.
+
+Regular characters are added to the input buffer and displayed on the framebuffer. Backspace and Enter are handled separately so that the input can be edited and completed correctly.
+
+The interrupt is acknowledged using `pic_acknowledge()` after the keyboard input has been processed.
+
+**SS22 – Keyboard interrupt processing**
+
+![Keyboard interrupt processing](screenshots/ss22.png)
+
+**SS23 – Character display and interrupt acknowledgement**
+
+![Character display and interrupt acknowledgement](screenshots/ss23.png)
+
+### Synchronisation
+
+As the keyboard interrupt handler and the input functions both access the input buffer, I needed to consider how to prevent them from interfering with each other.
+
+I used `cli` inside `getc()` to temporarily disable hardware interrupts while the buffer was being accessed. The previous processor flags are saved before this happens and restored afterwards using `popfl`.
+
+This creates a critical section, preventing the keyboard interrupt handler from interrupting the buffer-reading operation.
+
+This approach is suitable for the current single-CPU setup of my operating system.
+
+**SS24 – Synchronisation testing**
+
+![Synchronisation testing](screenshots/ss24.png)
+
+### Testing and Results
+
+I tested the input functionality using QEMU to make sure the different features worked correctly.
+
+| Test | Expected result | Outcome |
+|---|---|---|
+| Entering normal characters | Characters appear on screen | Passed |
+| Pressing Enter | Completes the input line | Passed |
+| Using Backspace | Removes the previous character | Passed |
+| Retrieving characters using `getc()` | Returns the next character | Passed |
+| Reading complete lines using `readline()` | Returns the completed input | Passed |
+| Testing longer input | Respects the supplied buffer size | Passed |
+| Testing after synchronisation changes | Keyboard input continues working | Passed |
+
+The tests showed that the operating system could accept keyboard input, allow the user to edit it and return completed lines correctly. The operating system continued running during the tests.
+
+---
+
 ## Conclusion
 
-Overall, this worksheet helped me understand more about how an operating system works at a basic level. I was able to create a bootloader, get my kernel working with C functions and build a framebuffer driver to display text.
+Overall, this worksheet helped me understand more about how an operating system works at a basic level. I was able to create a bootloader, get my kernel working with C functions, build a framebuffer driver and implement keyboard input using hardware interrupts.
 
-I also got more experience using Assembly, C, Linux, Make and QEMU. Testing each part as I went along helped me check that the different parts of my operating system were working together.
+I also gained more experience using Assembly, C, Linux, Make, Git and QEMU. Testing each part as I went along helped me check that the different components of my operating system were working together.
