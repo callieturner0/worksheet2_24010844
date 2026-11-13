@@ -6,6 +6,17 @@ For this worksheet, I worked on building a small operating system using Assembly
 
 I completed the work using the UWE CSCT Cloud environment. The main tools I used were NASM, GCC, Make, Git and QEMU.
 
+## Git Branches and Version Control
+
+I used Git and GitHub to keep track of my progress throughout the worksheet. I created separate branches for Part 1 and Part 2 so that I could keep the work organised without overwriting my previous work.
+
+- `main` – Contains my completed Part 1 work.
+- `worksheet2-part2` – Contains my Part 2 work, including keyboard input, the input buffer API and the terminal implementation.
+
+To view all the work, it is important to switch between the two branches on GitHub. This allows each part of the worksheet to be viewed separately.
+
+I regularly committed and pushed my changes to GitHub so that my work was saved remotely.
+
 ## Project Structure
 
 I organised my project into a few different folders to keep the files separate and easier to manage.
@@ -35,7 +46,9 @@ I also needed to set up a stack before calling the C kernel. The following code 
 
 ```asm
 mov esp, stack_top
+
 cld
+
 call kernel_main
 ```
 
@@ -273,13 +286,15 @@ I used Git to keep track of my changes and pushed my completed work to my GitHub
 
 For this part of the worksheet, I extended my operating system so that users could enter text using the keyboard. This involved setting up hardware interrupts, reading keyboard scan codes, converting them into ASCII characters and displaying the input using the framebuffer.
 
-I also needed to create an input buffer so that characters could be stored and retrieved by other parts of the operating system.
-
 ### Keyboard Input
 
-I first tested that the keyboard interrupt handler was working correctly and that characters could be entered into the operating system.
+I first needed to set up the interrupt system so that the operating system could respond when a key was pressed.
 
-The keyboard scan codes are read and converted into ASCII characters so they can be displayed on the framebuffer.
+I created the necessary I/O functions to communicate with the keyboard controller and the PIC. I also created an Interrupt Descriptor Table (IDT) to tell the processor which handler should be used when an interrupt occurs.
+
+The keyboard uses scan codes to identify which keys have been pressed. I created a function to read these scan codes and another function to convert them into ASCII characters.
+
+This allows the operating system to display the characters entered by the user.
 
 The terminal displays a `myos>` prompt and allows the user to enter text.
 
@@ -297,9 +312,33 @@ I tested this by entering "hello world" and deleting the final two characters. T
 
 ![Backspace testing](screenshots/ss17.png)
 
+### Keyboard Interrupt Handler
+
+The keyboard interrupt handler processes the scan codes received from the keyboard and converts them into ASCII characters.
+
+Regular characters are added to the input buffer and displayed on the framebuffer. Backspace and Enter are handled separately so that the input can be edited and completed correctly.
+
+The interrupt is acknowledged using `pic_acknowledge()` after the keyboard input has been processed.
+
+**SS22 – Keyboard interrupt processing**
+
+![Keyboard interrupt processing](screenshots/ss22.png)
+
+**SS23 – Character display and interrupt acknowledgement**
+
+![Character display and interrupt acknowledgement](screenshots/ss23.png)
+
+---
+
+## Task 2 – Input Buffer API
+
+For Task 2, I created an input buffer API to allow keyboard characters to be stored and retrieved by other parts of the operating system.
+
+This was important because the keyboard interrupt handler receives individual characters, but the kernel needs a way to read and process complete lines of input.
+
 ### Input Buffer and Buffer Size
 
-A circular input buffer was created in `drivers/interrupts.c` with a size of 256 characters. It uses a read index and a write index to keep track of where characters are retrieved and stored.
+I created a circular input buffer in `drivers/interrupts.c` with a size of 256 characters. It uses a read index and a write index to keep track of where characters are retrieved and stored.
 
 The `buffer_add()` function adds new characters to the buffer and checks whether it is full before storing them. This helps prevent unread characters from being overwritten.
 
@@ -335,22 +374,6 @@ I also included Backspace handling and a size check to prevent the function from
 
 ![readline implementation](screenshots/ss21.png)
 
-### Keyboard Interrupt Handler
-
-The keyboard interrupt handler processes the scan codes received from the keyboard and converts them into ASCII characters.
-
-Regular characters are added to the input buffer and displayed on the framebuffer. Backspace and Enter are handled separately so that the input can be edited and completed correctly.
-
-The interrupt is acknowledged using `pic_acknowledge()` after the keyboard input has been processed.
-
-**SS22 – Keyboard interrupt processing**
-
-![Keyboard interrupt processing](screenshots/ss22.png)
-
-**SS23 – Character display and interrupt acknowledgement**
-
-![Character display and interrupt acknowledgement](screenshots/ss23.png)
-
 ### Synchronisation
 
 As the keyboard interrupt handler and the input functions both access the input buffer, I needed to consider how to prevent them from interfering with each other.
@@ -383,8 +406,122 @@ The tests showed that the operating system could accept keyboard input, allow th
 
 ---
 
+## Task 3 – Terminal Implementation
+
+For Task 3, I extended my operating system by creating a basic command-line terminal. This allows users to enter commands through the keyboard and receive different outputs depending on what they enter.
+
+I used the keyboard input and framebuffer functionality that I had already implemented in the previous tasks. The terminal displays a `myos>` prompt and waits for the user to enter a command.
+
+### Command Structure and Function Pointers
+
+I created a command structure in `kernel.c` to store the name of each command and the function that should be executed when it is entered.
+
+I used a function pointer called `command_function`, which allows different functions to be called depending on the command entered.
+
+I then created a command table containing four commands: `help`, `echo`, `clear` and `version`.
+
+**SS30 – Command structure and function pointer**
+
+![Command structure](screenshots/ss30.png)
+
+**SS31 – Command table containing the available commands**
+
+![Command table](screenshots/ss31.png)
+
+### Comparing and Parsing Commands
+
+I created a function called `strings_equal()` to compare the command entered by the user with the names stored in the command table.
+
+The function compares each character in the two strings. It returns 0 if the strings are different and returns 1 if they match.
+
+**SS32 – String comparison function**
+
+![String comparison](screenshots/ss32.png)
+
+I then created `execute_command()` to process the user's input. It first removes any leading spaces and checks whether the input is empty.
+
+The function then separates the command from its arguments by finding the first space in the input. This allows commands such as `echo hello world` to be processed correctly.
+
+It searches through the command table and uses the matching function pointer to execute the correct command. I also used `sizeof()` to calculate the number of commands automatically, so I do not need to manually change the loop limit when adding another command.
+
+If the command is not recognised, the terminal displays an unknown-command message.
+
+**SS33 – Command parsing and separating arguments**
+
+![Command parsing](screenshots/ss33.png)
+
+**SS34 – Searching for commands and executing functions**
+
+![Command execution](screenshots/ss34.png)
+
+### Implementing the Terminal
+
+I updated `kernel_main()` to run the terminal in a continuous loop. The kernel displays the `myos>` prompt, uses `readline()` to collect the user's input and then passes the completed input to `execute_command()`.
+
+This means the terminal can continue accepting commands until the operating system is stopped.
+
+**SS35 – Kernel initialisation and terminal loop**
+
+![Kernel main function](screenshots/ss35.png)
+
+### Terminal Commands
+
+I implemented four commands to demonstrate the terminal functionality.
+
+| Command | Description |
+|---|---|
+| `help` | Displays a list of available commands and their descriptions. |
+| `echo [text]` | Displays the text entered after the command. |
+| `clear` | Clears the framebuffer screen. |
+| `version` | Displays the operating system name and version. |
+
+The `help` command makes it easier to see which commands are available. The `echo` command displays the arguments entered by the user, while `clear` uses my existing framebuffer clear function. The `version` command displays the name and version of my operating system.
+
+### Testing the Terminal
+
+I tested the terminal using QEMU to check that the commands were being recognised and executed correctly.
+
+I also tested different inputs to check how the terminal handled empty commands, multiple spaces and commands that were not recognised.
+
+**SS25 – Testing help, echo, unknown commands and empty input**
+
+![Basic terminal commands](screenshots/ss25.png)
+
+**SS26 – Testing the clear command**
+
+![Clear command](screenshots/ss26.png)
+
+**SS27 – Testing the version command**
+
+![Version command](screenshots/ss27.png)
+
+**SS28 – Updated help menu displaying all four commands**
+
+![Updated help menu](screenshots/ss28.png)
+
+| Test | Expected result | Outcome |
+|---|---|---|
+| Entering `help` | Displays the available commands | Passed |
+| Entering `echo hello` | Displays `hello` | Passed |
+| Entering `clear` | Clears the screen | Passed |
+| Entering `version` | Displays OS version information | Passed |
+| Entering an unknown command | Displays an error message | Passed |
+| Pressing Enter without input | Returns to a new prompt | Passed |
+| Entering `echo` without arguments | Displays an empty line | Passed |
+| Entering `echo` with multiple spaces | Displays the supplied text | Passed |
+
+**SS29 – Testing empty input, echo and unknown commands**
+
+![Terminal edge case testing](screenshots/ss29.png)
+
+The tests showed that the terminal could accept keyboard input, separate commands from their arguments and execute the correct functions. It also handled empty input and unknown commands without stopping the operating system.
+
+---
+
 ## Conclusion
 
-Overall, this worksheet helped me understand more about how an operating system works at a basic level. I was able to create a bootloader, get my kernel working with C functions, build a framebuffer driver and implement keyboard input using hardware interrupts.
+Overall, this worksheet helped me understand more about how an operating system works at a basic level. I created a bootloader, used Assembly and C together, built a framebuffer driver and implemented keyboard input using hardware interrupts.
 
-I also gained more experience using Assembly, C, Linux, Make, Git and QEMU. Testing each part as I went along helped me check that the different components of my operating system were working together.
+I also developed an input buffer and created a basic terminal that can recognise and execute commands such as help, echo, clear and version. Testing each part using QEMU helped me understand how the different components work together.
+
+I gained more experience using Assembly, C, Linux, Make, Git and QEMU throughout the worksheet.
