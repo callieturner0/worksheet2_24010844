@@ -8,12 +8,14 @@ I completed the work using the UWE CSCT Cloud environment. The main tools I used
 
 ## Git Branches and Version Control
 
-I used Git and GitHub to keep track of my progress throughout the worksheet. I created separate branches for Part 1 and Part 2 so that I could keep the work organised without overwriting my previous work.
+I have used separate Git branches to organise Part 1 and Part 2 of this worksheet.
 
-- `main` – Contains my completed Part 1 work.
-- `worksheet2-part2` – Contains my completed Part 2 work.
+- `main` contains Part 1
+- `worksheet2-part2` contains Part 2
 
-To view all the work, please switch between the two branches on GitHub. This allows each part of the worksheet to be viewed separately.
+Each branch has its own Makefile because Part 2 requires additional source files and drivers.
+
+To build and test each part, please switch to the relevant branch first and run `make` to build the operating system, followed by `make run` to launch it in QEMU.
 
 ## Project Structure
 
