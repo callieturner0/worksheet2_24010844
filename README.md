@@ -11,11 +11,9 @@ I completed the work using the UWE CSCT Cloud environment. The main tools I used
 I used Git and GitHub to keep track of my progress throughout the worksheet. I created separate branches for Part 1 and Part 2 so that I could keep the work organised without overwriting my previous work.
 
 - `main` – Contains my completed Part 1 work.
-- `worksheet2-part2` – Contains my Part 2 work, including keyboard input, the input buffer API and the terminal implementation.
+- `worksheet2-part2` – Contains my completed Part 2 work.
 
-To view all the work, it is important to switch between the two branches on GitHub. This allows each part of the worksheet to be viewed separately.
-
-I regularly committed and pushed my changes to GitHub so that my work was saved remotely.
+To view all the work, please switch between the two branches on GitHub. This allows each part of the worksheet to be viewed separately.
 
 ## Project Structure
 
